@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PasswordGate from '@/components/PasswordGate';
+import QRScanner from '@/components/QRScanner';
 import { STAFF_PASSWORD } from '@/lib/utils';
 import type { CouponStatus } from '@/lib/supabase';
 
@@ -32,6 +33,17 @@ interface SurveyResponse {
   coupons: { code: string } | null;
 }
 
+interface VerifyResult {
+  valid: boolean;
+  message: string;
+  status: 'valid' | 'used' | 'expired' | 'not_found';
+  coupon?: {
+    code: string;
+    created_at: string;
+    expires_at: string;
+  };
+}
+
 export default function AdminPage() {
   return (
     <PasswordGate storageKey="admin-auth">
@@ -44,9 +56,15 @@ function AdminContent() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [coupons, setCoupons] = useState<CouponWithStatus[]>([]);
   const [surveyResponses, setSurveyResponses] = useState<SurveyResponse[]>([]);
-  const [activeTab, setActiveTab] = useState<'coupons' | 'surveys'>('coupons');
+  const [activeTab, setActiveTab] = useState<'verify' | 'coupons' | 'surveys'>('verify');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
+
+  // Verify states
+  const [manualCode, setManualCode] = useState('');
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyMode, setVerifyMode] = useState<'manual' | 'qr'>('manual');
 
   const fetchData = useCallback(async () => {
     try {
@@ -79,6 +97,47 @@ function AdminContent() {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  const verifyCoupon = async (code: string) => {
+    if (!code.trim()) return;
+
+    setIsVerifying(true);
+    setVerifyResult(null);
+
+    try {
+      const response = await fetch('/api/coupons/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+
+      const result = await response.json();
+      setVerifyResult(result);
+
+      // Basarili dogrulamada verileri yenile
+      if (result.valid) {
+        fetchData();
+      }
+    } catch (err) {
+      setVerifyResult({
+        valid: false,
+        message: 'Dogrulama sirasinda hata olustu',
+        status: 'not_found',
+      });
+    } finally {
+      setIsVerifying(false);
+      setManualCode('');
+    }
+  };
+
+  const handleQRScan = (code: string) => {
+    verifyCoupon(code);
+  };
+
+  const resetVerify = () => {
+    setVerifyResult(null);
+    setManualCode('');
+  };
 
   if (isLoading) {
     return (
@@ -229,10 +288,20 @@ function AdminContent() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('verify')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'verify'
+                ? 'bg-green-600 text-white'
+                : 'bg-white text-coffee-700 hover:bg-coffee-100'
+            }`}
+          >
+            Kupon Dogrula
+          </button>
           <button
             onClick={() => setActiveTab('coupons')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               activeTab === 'coupons'
                 ? 'bg-coffee-500 text-white'
                 : 'bg-white text-coffee-700 hover:bg-coffee-100'
@@ -242,7 +311,7 @@ function AdminContent() {
           </button>
           <button
             onClick={() => setActiveTab('surveys')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               activeTab === 'surveys'
                 ? 'bg-coffee-500 text-white'
                 : 'bg-white text-coffee-700 hover:bg-coffee-100'
@@ -251,6 +320,160 @@ function AdminContent() {
             Anket Yanitlari ({surveyResponses.length})
           </button>
         </div>
+
+        {/* Verify Section */}
+        {activeTab === 'verify' && (
+          <div className="bg-white rounded-2xl shadow-xl p-6">
+            <h2 className="text-xl font-semibold text-coffee-800 mb-6 text-center">
+              Kupon Dogrulama
+            </h2>
+
+            {/* Verify Result */}
+            {verifyResult && (
+              <div className="mb-6">
+                <div
+                  className={`p-6 rounded-xl text-center ${
+                    verifyResult.valid
+                      ? 'bg-green-100 border-2 border-green-500'
+                      : verifyResult.status === 'used'
+                      ? 'bg-gray-100 border-2 border-gray-400'
+                      : verifyResult.status === 'expired'
+                      ? 'bg-orange-100 border-2 border-orange-400'
+                      : 'bg-red-100 border-2 border-red-400'
+                  }`}
+                >
+                  {/* Icon */}
+                  <div className="flex justify-center mb-3">
+                    {verifyResult.valid ? (
+                      <svg className="w-16 h-16 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ) : verifyResult.status === 'used' ? (
+                      <svg className="w-16 h-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ) : verifyResult.status === 'expired' ? (
+                      <svg className="w-16 h-16 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-16 h-16 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* Message */}
+                  <p className={`text-xl font-bold mb-2 ${
+                    verifyResult.valid ? 'text-green-700' :
+                    verifyResult.status === 'used' ? 'text-gray-700' :
+                    verifyResult.status === 'expired' ? 'text-orange-700' : 'text-red-700'
+                  }`}>
+                    {verifyResult.message}
+                  </p>
+
+                  {/* Coupon Code */}
+                  {verifyResult.coupon && (
+                    <p className="font-mono text-lg text-gray-600 mb-2">
+                      Kod: {verifyResult.coupon.code}
+                    </p>
+                  )}
+
+                  {/* Success Animation */}
+                  {verifyResult.valid && (
+                    <p className="text-green-600 font-medium mt-2">
+                      %10 indirim uygulayabilirsiniz!
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  onClick={resetVerify}
+                  className="w-full mt-4 py-3 bg-coffee-500 text-white rounded-xl font-medium hover:bg-coffee-600 transition-colors"
+                >
+                  Yeni Dogrulama Yap
+                </button>
+              </div>
+            )}
+
+            {/* Verify Input */}
+            {!verifyResult && (
+              <>
+                {/* Mode Toggle */}
+                <div className="flex gap-2 mb-6">
+                  <button
+                    onClick={() => setVerifyMode('manual')}
+                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                      verifyMode === 'manual'
+                        ? 'bg-coffee-500 text-white'
+                        : 'bg-coffee-100 text-coffee-700'
+                    }`}
+                  >
+                    Elle Gir
+                  </button>
+                  <button
+                    onClick={() => setVerifyMode('qr')}
+                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                      verifyMode === 'qr'
+                        ? 'bg-coffee-500 text-white'
+                        : 'bg-coffee-100 text-coffee-700'
+                    }`}
+                  >
+                    QR Tarat
+                  </button>
+                </div>
+
+                {/* Manual Input */}
+                {verifyMode === 'manual' && (
+                  <div>
+                    <input
+                      type="text"
+                      value={manualCode}
+                      onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === 'Enter' && verifyCoupon(manualCode)}
+                      placeholder="Kupon kodunu girin (orn: ABC123)"
+                      className="w-full px-4 py-4 text-center text-2xl font-mono border-2 border-coffee-200 rounded-xl focus:border-coffee-500 focus:ring-2 focus:ring-coffee-200 outline-none uppercase tracking-widest"
+                      maxLength={6}
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => verifyCoupon(manualCode)}
+                      disabled={!manualCode.trim() || isVerifying}
+                      className="w-full mt-4 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {isVerifying ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          Dogrulaniyor...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Dogrula ve Kullan
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* QR Scanner */}
+                {verifyMode === 'qr' && (
+                  <div>
+                    <QRScanner
+                      onScan={handleQRScan}
+                      onError={(err) => console.error('QR Error:', err)}
+                    />
+                    <p className="text-center text-sm text-gray-500 mt-4">
+                      Musterinin telefonundaki QR kodu tarayin
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Coupons Table */}
         {activeTab === 'coupons' && (
