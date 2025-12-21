@@ -431,9 +431,9 @@ function AdminContent() {
                       value={manualCode}
                       onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                       onKeyDown={(e) => e.key === 'Enter' && verifyCoupon(manualCode)}
-                      placeholder="Kupon kodunu girin (orn: ABC123)"
+                      placeholder="Kupon kodunu girin (orn: NAV5HWGF)"
                       className="w-full px-4 py-4 text-center text-2xl font-mono border-2 border-coffee-200 rounded-xl focus:border-coffee-500 focus:ring-2 focus:ring-coffee-200 outline-none uppercase tracking-widest"
-                      maxLength={6}
+                      maxLength={8}
                       autoFocus
                     />
                     <button
