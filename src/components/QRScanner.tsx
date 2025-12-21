@@ -10,51 +10,118 @@ interface QRScannerProps {
 
 export default function QRScanner({ onScan, onError }: QRScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const requestCameraPermission = async (): Promise<boolean> => {
+    try {
+      // Kamera API'si var mi kontrol et
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setErrorMessage('Bu cihazda kamera desteklenmiyor');
+        return false;
+      }
+
+      // Kamera izni iste
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+
+      // Stream'i kapat (sadece izin kontrolu icin kullandik)
+      stream.getTracks().forEach(track => track.stop());
+
+      return true;
+    } catch (err: any) {
+      console.error('Camera permission error:', err);
+
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setErrorMessage('Kamera izni reddedildi. Tarayici ayarlarindan izin verin.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setErrorMessage('Kamera bulunamadi. Cihazinizda kamera var mi?');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setErrorMessage('Kamera baska bir uygulama tarafindan kullaniliyor.');
+      } else if (err.name === 'OverconstrainedError') {
+        setErrorMessage('Arka kamera bulunamadi, on kamera deneniyor...');
+      } else {
+        setErrorMessage(`Kamera hatasi: ${err.message || 'Bilinmeyen hata'}`);
+      }
+
+      return false;
+    }
+  };
+
   const startScanner = async () => {
     if (!containerRef.current) return;
+
+    setIsLoading(true);
+    setErrorMessage('');
+    setHasPermission(null);
+
+    // Once izin kontrolu yap
+    const hasAccess = await requestCameraPermission();
+    if (!hasAccess) {
+      setIsLoading(false);
+      setHasPermission(false);
+      return;
+    }
 
     try {
       const html5Qrcode = new Html5Qrcode('qr-reader');
       scannerRef.current = html5Qrcode;
 
-      await html5Qrcode.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1,
-        },
-        (decodedText) => {
-          // URL'den kodu cikart veya dogrudan kodu kullan
-          let code = decodedText;
-          try {
-            const url = new URL(decodedText);
-            const codeParam = url.searchParams.get('code');
-            if (codeParam) {
-              code = codeParam;
-            }
-          } catch {
-            // URL degilse, dogrudan kodu kullan
-          }
-          onScan(code);
-          stopScanner();
-        },
-        () => {
-          // QR kod bulunamadi - sessizce devam et
-        }
-      );
+      // Arka kamerayi dene, yoksa herhangi bir kamera
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1,
+      };
+
+      try {
+        await html5Qrcode.start(
+          { facingMode: 'environment' },
+          config,
+          handleScanSuccess,
+          () => {} // QR bulunamadi - sessizce devam
+        );
+      } catch (envError) {
+        // Arka kamera yoksa on kamerayi dene
+        console.log('Trying front camera...');
+        await html5Qrcode.start(
+          { facingMode: 'user' },
+          config,
+          handleScanSuccess,
+          () => {}
+        );
+      }
 
       setIsScanning(true);
       setHasPermission(true);
     } catch (err: any) {
-      console.error('Scanner error:', err);
+      console.error('Scanner start error:', err);
       setHasPermission(false);
+      setErrorMessage(err.message || 'Kamera baslatilamadi');
       onError?.(err.message || 'Kamera erisimi saglanamadi');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleScanSuccess = (decodedText: string) => {
+    // URL'den kodu cikart veya dogrudan kodu kullan
+    let code = decodedText;
+    try {
+      const url = new URL(decodedText);
+      const codeParam = url.searchParams.get('code');
+      if (codeParam) {
+        code = codeParam;
+      }
+    } catch {
+      // URL degilse, dogrudan kodu kullan
+    }
+    onScan(code);
+    stopScanner();
   };
 
   const stopScanner = async () => {
@@ -85,7 +152,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         style={{ minHeight: isScanning ? '300px' : '0' }}
       />
 
-      {!isScanning && (
+      {!isScanning && !isLoading && (
         <button
           onClick={startScanner}
           className="w-full py-4 px-6 bg-coffee-500 text-white rounded-xl font-semibold text-lg hover:bg-coffee-600 transition-colors flex items-center justify-center gap-3"
@@ -113,6 +180,13 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         </button>
       )}
 
+      {isLoading && (
+        <div className="w-full py-4 px-6 bg-coffee-300 text-white rounded-xl font-semibold text-lg flex items-center justify-center gap-3">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+          Kamera aciliyor...
+        </div>
+      )}
+
       {isScanning && (
         <button
           onClick={stopScanner}
@@ -122,12 +196,24 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         </button>
       )}
 
-      {hasPermission === false && (
+      {hasPermission === false && errorMessage && (
         <div className="mt-4 p-4 bg-red-50 rounded-xl text-red-700 text-center">
-          <p className="font-medium">Kamera erisimi reddedildi</p>
-          <p className="text-sm mt-1">
-            Lutfen tarayici ayarlarindan kamera iznini aktif edin
-          </p>
+          <p className="font-medium">Kamera Hatasi</p>
+          <p className="text-sm mt-1">{errorMessage}</p>
+          <button
+            onClick={startScanner}
+            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+          >
+            Tekrar Dene
+          </button>
+        </div>
+      )}
+
+      {/* HTTPS uyarisi */}
+      {typeof window !== 'undefined' && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && (
+        <div className="mt-4 p-3 bg-yellow-50 rounded-xl text-yellow-700 text-center text-sm">
+          <p className="font-medium">Uyari: HTTPS gerekli</p>
+          <p>Kamera erisimi icin HTTPS baglantisi gereklidir.</p>
         </div>
       )}
     </div>
