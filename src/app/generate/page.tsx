@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import CountdownTimer from '@/components/CountdownTimer';
 import { getVerificationUrl } from '@/lib/utils';
@@ -15,10 +16,22 @@ interface CouponData {
 
 function LoadingState() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-coffee-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-coffee-500 mx-auto"></div>
-        <p className="mt-4 text-coffee-700 font-medium">Kuponunuz hazirlaniyor...</p>
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+      {/* Background */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/anasayfa.jpg"
+          alt="Rhea Cafe"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-black/40" />
+      </div>
+
+      <div className="relative z-10 text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto"></div>
+        <p className="mt-4 text-white font-medium">Kuponunuz hazirlaniyor...</p>
       </div>
     </div>
   );
@@ -68,16 +81,27 @@ function GenerateContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-coffee-50 p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+        {/* Background */}
+        <div className="fixed inset-0 z-0">
+          <Image
+            src="/anasayfa.jpg"
+            alt="Rhea Cafe"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40" />
+        </div>
+
+        <div className="relative z-10 glass-card p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-orange-500/80 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
-              className="w-8 h-8 text-orange-600"
+              className="w-8 h-8 text-white"
             >
               <path
                 strokeLinecap="round"
@@ -86,11 +110,11 @@ function GenerateContent() {
               />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-gray-800 mb-2">Bir Sorun Olustu</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h1 className="text-xl font-bold text-white mb-2">Bir Sorun Olustu</h1>
+          <p className="text-white/80 mb-6">{error}</p>
           <a
             href="/anket"
-            className="block w-full py-4 bg-coffee-500 text-white rounded-xl font-semibold text-lg hover:bg-coffee-600 transition-colors"
+            className="block w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold text-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
           >
             Ankete Git
           </a>
@@ -104,104 +128,113 @@ function GenerateContent() {
   const verificationUrl = getVerificationUrl(coupon.code);
 
   return (
-    <div className="min-h-screen bg-coffee-50 py-8 px-4">
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-coffee-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-10 h-10 text-white"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/anasayfa.jpg"
+          alt="Rhea Cafe"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen py-8 px-4">
+        <div className="max-w-md mx-auto">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <Image
+                src="/logo.png"
+                alt="Rhea Cafe Logo"
+                width={80}
+                height={80}
+                className="drop-shadow-2xl"
               />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-coffee-800">Tebrikler!</h1>
-          <p className="text-coffee-600 mt-2">
-            Anketimizi tamamladiginiz icin tesekkur ederiz.
-            <br />
-            Indirim kuponunuz hazir!
-          </p>
-        </div>
-
-        {/* Coupon Card */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* QR Code */}
-          <div className="p-6 flex justify-center bg-gradient-to-b from-coffee-50 to-white">
-            <QRCodeDisplay value={verificationUrl} size={280} />
+            </div>
+            <h1 className="text-3xl font-bold text-white drop-shadow-lg">Tebrikler!</h1>
+            <p className="text-white/90 mt-2">
+              Indirim kuponunuz hazir!
+            </p>
           </div>
 
-          {/* Coupon Code */}
-          <div className="px-6 pb-6">
-            <div className="bg-coffee-100 rounded-xl p-4 text-center">
-              <p className="text-sm text-coffee-600 mb-1">Kupon Kodu</p>
-              <p className="text-3xl font-mono font-bold text-coffee-800 tracking-wider">
-                {coupon.code}
-              </p>
+          {/* Coupon Card */}
+          <div className="glass-card overflow-hidden">
+            {/* QR Code */}
+            <div className="p-6 flex justify-center bg-white/10">
+              <div className="bg-white rounded-2xl p-4">
+                <QRCodeDisplay value={verificationUrl} size={240} />
+              </div>
+            </div>
+
+            {/* Coupon Code */}
+            <div className="px-6 pb-6 pt-2">
+              <div className="glass-card-light rounded-xl p-4 text-center">
+                <p className="text-sm text-white/70 mb-1">Kupon Kodu</p>
+                <p className="text-3xl font-mono font-bold text-white tracking-wider">
+                  {coupon.code}
+                </p>
+              </div>
+            </div>
+
+            {/* Countdown */}
+            <div className="px-6 pb-6">
+              {isExpired ? (
+                <div className="bg-red-500/80 backdrop-blur-sm border border-red-400 rounded-xl p-6 text-center">
+                  <p className="text-white font-bold text-xl">Suresi Doldu</p>
+                  <p className="text-white/80 mt-1">Bu kupon artik gecerli degil</p>
+                </div>
+              ) : (
+                <CountdownTimer
+                  expiresAt={coupon.expires_at}
+                  onExpire={() => setIsExpired(true)}
+                />
+              )}
+            </div>
+
+            {/* Instructions */}
+            <div className="glass-card-light mx-6 mb-6 rounded-xl px-5 py-4">
+              <h3 className="font-semibold text-white mb-3">Nasil Kullanilir?</h3>
+              <ol className="space-y-2 text-white/90 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="bg-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    1
+                  </span>
+                  <span>Bu ekrani veya kupon kodunu kasaya gosterin</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    2
+                  </span>
+                  <span>Personel QR kodu tarayacak veya kodu girecek</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    3
+                  </span>
+                  <span>%10 indriminiz otomatik uygulanacak</span>
+                </li>
+              </ol>
+            </div>
+
+            {/* Warning */}
+            <div className="px-6 pb-6">
+              <div className="bg-orange-500/30 backdrop-blur-sm border border-orange-400/50 rounded-xl p-4">
+                <p className="text-white text-sm text-center">
+                  <strong>Dikkat:</strong> Bu kupon tek kullanimliktir ve 6 saat icinde kullanilmalidir.
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Countdown */}
-          <div className="px-6 pb-6">
-            {isExpired ? (
-              <div className="bg-red-100 border-2 border-red-300 rounded-xl p-6 text-center">
-                <p className="text-red-700 font-bold text-xl">Suresi Doldu</p>
-                <p className="text-red-600 mt-1">Bu kupon artik gecerli degil</p>
-              </div>
-            ) : (
-              <CountdownTimer
-                expiresAt={coupon.expires_at}
-                onExpire={() => setIsExpired(true)}
-              />
-            )}
-          </div>
-
-          {/* Instructions */}
-          <div className="bg-coffee-50 px-6 py-5">
-            <h3 className="font-semibold text-coffee-800 mb-3">Nasil Kullanilir?</h3>
-            <ol className="space-y-2 text-coffee-700 text-sm">
-              <li className="flex items-start gap-2">
-                <span className="bg-coffee-500 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs">
-                  1
-                </span>
-                <span>Bu ekrani veya kupon kodunu kasaya gosterin</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-coffee-500 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs">
-                  2
-                </span>
-                <span>Personel QR kodu tarayacak veya kodu girecek</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-coffee-500 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs">
-                  3
-                </span>
-                <span>Indriminiz otomatik olarak uygulanacak</span>
-              </li>
-            </ol>
-          </div>
-
-          {/* Warning */}
-          <div className="px-6 py-4 bg-orange-50 border-t border-orange-100">
-            <p className="text-orange-700 text-sm text-center">
-              <strong>Dikkat:</strong> Bu kupon tek kullanimliktir ve 6 saat icinde
-              kullanilmalidir.
-            </p>
-          </div>
+          {/* Footer */}
+          <p className="text-center text-white/60 text-sm mt-6">
+            Rhea Cafe - Bizi tercih ettiginiz icin tesekkurler!
+          </p>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-coffee-500 text-sm mt-6">
-          Rhea Cafe - Bizi tercih ettiginiz icin tesekkurler!
-        </p>
       </div>
     </div>
   );
