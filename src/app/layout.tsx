@@ -7,6 +7,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Rhea Cafe - Geri Bildirim",
   description: "Rhea Cafe anketini tamamlayin ve indirim kuponu kazanin",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
