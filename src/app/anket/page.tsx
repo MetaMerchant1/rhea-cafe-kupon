@@ -73,7 +73,7 @@ export default function AnketPage() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background Image */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0" style={{ top: '20px' }}>
         <Image
           src="/anasayfa.jpg"
           alt="Rhea Cafe"
@@ -89,15 +89,6 @@ export default function AnketPage() {
       <div className="relative z-10 min-h-screen py-8 px-4">
         {/* Header */}
         <header className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <Image
-              src="/logo.png"
-              alt="Rhea Cafe Logo"
-              width={80}
-              height={80}
-              className="drop-shadow-2xl"
-            />
-          </div>
           <h1 className="text-2xl font-bold text-white drop-shadow-lg">Geri Bildirim Anketi</h1>
         </header>
 
